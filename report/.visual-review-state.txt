@@ -1,0 +1,1 @@
+2026-08-20 visual review: reviewed standard contact sheet and high-risk feature-roadmap page 6. Layout is readable, headers repeat across tables, no clipping or overlap observed, and no page-level repair is required. The feature table continues across pages while preserving its header.

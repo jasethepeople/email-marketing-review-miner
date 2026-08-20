@@ -1,0 +1,166 @@
+{
+  "sample_size": 38,
+  "sentiment_distribution": {
+    "negative": 24,
+    "positive": 8,
+    "neutral": 6
+  },
+  "pain_point_frequency": {
+    "Onboarding & usability": 16,
+    "Support & human escalation": 15,
+    "Account trust & compliance": 10,
+    "Pricing & billing control": 9,
+    "Workflow flexibility": 9,
+    "Reliability & performance": 5,
+    "Other / contextual": 3
+  },
+  "competitors": {
+    "ActiveCampaign": {
+      "reviews": 8,
+      "mean_rating": 2.25,
+      "mean_sentiment": -1.27,
+      "negative_reviews": 3,
+      "pain_points": {
+        "Workflow flexibility": 4,
+        "Pricing & billing control": 4,
+        "Onboarding & usability": 3,
+        "Support & human escalation": 3
+      }
+    },
+    "Brevo": {
+      "reviews": 8,
+      "mean_rating": 2.0,
+      "mean_sentiment": -1.64,
+      "negative_reviews": 6,
+      "pain_points": {
+        "Account trust & compliance": 6,
+        "Onboarding & usability": 5,
+        "Support & human escalation": 3,
+        "Reliability & performance": 1
+      }
+    },
+    "Klaviyo": {
+      "reviews": 7,
+      "mean_rating": 1.57,
+      "mean_sentiment": -2.33,
+      "negative_reviews": 6,
+      "pain_points": {
+        "Pricing & billing control": 4,
+        "Workflow flexibility": 3,
+        "Support & human escalation": 2,
+        "Onboarding & usability": 2,
+        "Account trust & compliance": 1,
+        "Reliability & performance": 1
+      }
+    },
+    "Mailchimp": {
+      "reviews": 8,
+      "mean_rating": 1.75,
+      "mean_sentiment": -2.29,
+      "negative_reviews": 6,
+      "pain_points": {
+        "Support & human escalation": 4,
+        "Onboarding & usability": 3,
+        "Account trust & compliance": 2,
+        "Reliability & performance": 2,
+        "Other / contextual": 2,
+        "Workflow flexibility": 1,
+        "Pricing & billing control": 1
+      }
+    },
+    "Omnisend": {
+      "reviews": 7,
+      "mean_rating": 3.29,
+      "mean_sentiment": 1.06,
+      "negative_reviews": 3,
+      "pain_points": {
+        "Support & human escalation": 3,
+        "Onboarding & usability": 3,
+        "Account trust & compliance": 1,
+        "Workflow flexibility": 1,
+        "Reliability & performance": 1,
+        "Other / contextual": 1
+      }
+    }
+  },
+  "unsupervised_clusters": {
+    "1": {
+      "size": 12,
+      "top_terms": [
+        "support",
+        "account",
+        "ai",
+        "customer",
+        "community",
+        "help",
+        "list",
+        "payment"
+      ]
+    },
+    "2": {
+      "size": 11,
+      "top_terms": [
+        "account",
+        "support",
+        "instructions",
+        "confusing",
+        "validation",
+        "articles",
+        "user",
+        "email"
+      ]
+    },
+    "3": {
+      "size": 2,
+      "top_terms": [
+        "service",
+        "newly",
+        "purchased",
+        "account",
+        "suspended",
+        "used",
+        "unique",
+        "integration"
+      ]
+    },
+    "4": {
+      "size": 5,
+      "top_terms": [
+        "expensive",
+        "platform",
+        "cancellation",
+        "auto",
+        "upgrade",
+        "off",
+        "plan",
+        "still"
+      ]
+    },
+    "5": {
+      "size": 3,
+      "top_terms": [
+        "strong",
+        "price",
+        "product",
+        "automation",
+        "engine",
+        "reporting",
+        "crm",
+        "capability"
+      ]
+    },
+    "6": {
+      "size": 5,
+      "top_terms": [
+        "use",
+        "interface",
+        "specific",
+        "communications",
+        "user",
+        "support",
+        "email",
+        "campaigns"
+      ]
+    }
+  }
+}

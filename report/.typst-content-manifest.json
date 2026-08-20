@@ -1,0 +1,11 @@
+{
+  "task_kind": "new-document",
+  "output": "pdf",
+  "signals": [],
+  "hard_constraints": ["executive product strategy report", "inline source citations", "competitor comparison table", "prioritized feature roadmap"],
+  "content_features": {
+    "code_blocks": 0,
+    "defined_terms": 3,
+    "portrait_images": 0
+  }
+}
