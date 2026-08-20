@@ -1,0 +1,3 @@
+Browser validation completed on 2026-08-20: the All filter resolved from loading to an AI-generated, three-card feature-gap summary. The rendered output selected Onboarding & usability (16 mentions), Human escalation (15), and Account trust (10), displayed the gpt-5-mini model label, and retained the evidence-grounding disclaimer.
+
+Individual-filter validation: after selecting Brevo, the dashboard updated its focus card, theme bars, and AI summary context. The rendered AI cards selected Account trust (6 mentions), Onboarding & usability (5), and Human escalation (3), matching the active Brevo theme counts.

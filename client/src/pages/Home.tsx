@@ -19,6 +19,7 @@ import {
   Sparkles,
   Workflow,
 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 import {
   Bar,
   BarChart,
@@ -203,6 +204,10 @@ export default function Home() {
   const selected = focus === "All" ? null : competitors.find((competitor) => competitor.name === focus);
   const themes = themeData[focus];
   const maxTheme = Math.max(...themes.map((theme) => theme.count), 1);
+  const { data: aiSummary, isLoading: isSummaryLoading, error: summaryError, refetch: refetchSummary } = trpc.reviewInsights.featureGapSummary.useQuery(
+    { filter: focus, themes, sampleSize: selected?.sample ?? 38 },
+    { staleTime: 30 * 60 * 1000, retry: 1 }
+  );
 
   const chartData = useMemo(
     () => competitors.map((competitor) => ({ name: competitor.name, negative: competitor.negative, sample: competitor.sample })),
@@ -360,6 +365,45 @@ export default function Home() {
               <p><strong>Do not confuse “AI assistance” with control.</strong> The frustration is not simply automated support. It is the inability to see what changed, reverse it, or hand the case to a responsible operator.</p>
             </aside>
           </div>
+        </section>
+
+        <section className="ai-gap-section" aria-live="polite">
+          <div className="ai-gap-heading">
+            <div>
+              <p className="section-kicker"><span>AI / CURRENT FILTER</span></p>
+              <h2>Three gaps worth<br />building for.</h2>
+            </div>
+            <div className="ai-method-note">
+              <Sparkles size={18} />
+              <p>Generated from the active <strong>{focus}</strong> evidence view only. The model selects from visible coded themes; counts remain tied to the research sample.</p>
+            </div>
+          </div>
+
+          {isSummaryLoading && (
+            <div className="ai-loading" role="status"><span className="loading-spark"><Sparkles size={18} /></span><div><strong>Reading the selected evidence</strong><p>Identifying the three highest-priority feature gaps for this filter.</p></div></div>
+          )}
+
+          {summaryError && (
+            <div className="ai-error"><div><strong>The summary could not be generated.</strong><span>The chart and evidence remain available. Try the analysis again.</span></div><button onClick={() => refetchSummary()}>Retry AI analysis</button></div>
+          )}
+
+          {aiSummary && !isSummaryLoading && (
+            <>
+              <p className="ai-perspective">{aiSummary.perspective}</p>
+              <div className="ai-gap-grid">
+                {aiSummary.gaps.map((gap, index) => (
+                  <article className="ai-gap-card" key={gap.theme}>
+                    <div className="ai-gap-index"><span>0{index + 1}</span><b>{gap.evidenceCount} mentions</b></div>
+                    <p className="ai-theme">{gap.theme}</p>
+                    <h3>{gap.title}</h3>
+                    <p>{gap.whyNow}</p>
+                    <div className="ai-feature"><span>BUILD</span><strong>{gap.recommendedFeature}</strong></div>
+                  </article>
+                ))}
+              </div>
+              <p className="ai-footnote">Model: {aiSummary.model}. This is a strategy aid, not a statistical ranking or an external market claim.</p>
+            </>
+          )}
         </section>
 
         <section className="wedge-section" id="wedge">

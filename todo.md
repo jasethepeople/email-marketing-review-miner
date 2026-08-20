@@ -1,0 +1,6 @@
+- [x] Define a structured, evidence-grounded top-three feature-gap response for every competitor-filter state.
+- [x] Enable built-in LLM capability and add a server route that summarizes only the current filtered data.
+- [x] Add a visible AI summary module with loading, error, and supporting-signal states.
+- [x] Test All and individual competitor filters, then capture a final responsive verification and checkpoint.
+- [x] Confirm the rendered AI feature-gap cards after the All and Brevo filter states, including loading and success behavior.
+- [x] Capture refreshed desktop and mobile screenshots after the AI-summary integration, then save a release checkpoint.
