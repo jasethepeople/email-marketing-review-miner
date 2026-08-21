@@ -1,0 +1,1 @@
+Anonymous browser validation on 2026-08-20: navigating to /admin renders the supplied dashboard authentication gate with a clear Sign in to continue message and login action. Server tests separately verify non-admin rejection and administrator persistence behavior.

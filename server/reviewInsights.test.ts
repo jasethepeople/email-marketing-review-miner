@@ -8,6 +8,7 @@ const { invokeLLM, listLLMModels } = vi.hoisted(() => ({
 vi.mock("./_core/llm", () => ({ invokeLLM, listLLMModels }));
 
 import { generateFeatureGapSummary } from "./reviewInsights";
+import { DEFAULT_AI_RUBRIC, rankThemesForRubric } from "./aiRubric";
 
 describe("generateFeatureGapSummary", () => {
   beforeEach(() => {
@@ -37,10 +38,24 @@ describe("generateFeatureGapSummary", () => {
         { label: "Account trust", count: 10 },
         { label: "Pricing control", count: 9 },
       ],
-    });
+    }, DEFAULT_AI_RUBRIC);
 
     expect(result.model).toBe("gpt-5-mini");
     expect(result.gaps.map(gap => gap.evidenceCount)).toEqual([15, 10, 9]);
     expect(invokeLLM).toHaveBeenCalledWith(expect.objectContaining({ model: "gpt-5-mini" }));
+  });
+
+  it("uses the persisted rubric weight to rank eligible themes before the model is invoked", () => {
+    const ranked = rankThemesForRubric([
+      { label: "Onboarding & usability", count: 8 },
+      { label: "Reliability", count: 7 },
+      { label: "Account trust", count: 6 },
+    ], {
+      ...DEFAULT_AI_RUBRIC,
+      themeWeights: { ...DEFAULT_AI_RUBRIC.themeWeights, Reliability: 2 },
+    });
+
+    expect(ranked.map(theme => theme.label)).toEqual(["Reliability", "Onboarding & usability", "Account trust"]);
+    expect(ranked[0]?.priorityScore).toBe(14);
   });
 });

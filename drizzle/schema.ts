@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { int, json, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -25,4 +25,25 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+/** Singleton configuration record that governs the evidence-to-priority rubric for AI summaries. */
+export const aiSummarySettings = mysqlTable("ai_summary_settings", {
+  id: int("id").primaryKey(),
+  themeWeights: json("themeWeights").$type<Record<string, number>>().notNull(),
+  minimumEvidenceCount: int("minimumEvidenceCount").notNull(),
+  maximumWords: int("maximumWords").notNull(),
+  analysisPosture: varchar("analysisPosture", { length: 32 }).notNull(),
+  updatedBy: varchar("updatedBy", { length: 64 }),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AiSummarySettings = typeof aiSummarySettings.$inferSelect;
+
+/** Cached, evidence-scoped LLM result. The cache key includes the current rubric and expires after seven days. */
+export const aiSummaryCache = mysqlTable("ai_summary_cache", {
+  id: int("id").autoincrement().primaryKey(),
+  cacheKey: varchar("cacheKey", { length: 128 }).notNull().unique(),
+  summary: json("summary").$type<Record<string, unknown>>().notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  lastUsedAt: timestamp("lastUsedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});

@@ -4,3 +4,17 @@
 - [x] Test All and individual competitor filters, then capture a final responsive verification and checkpoint.
 - [x] Confirm the rendered AI feature-gap cards after the All and Brevo filter states, including loading and success behavior.
 - [x] Capture refreshed desktop and mobile screenshots after the AI-summary integration, then save a release checkpoint.
+- [x] Define an admin-only, persisted scoring-rubric model with bounded AI-summary parameters.
+- [x] Apply admin rubric settings to AI-summary evidence ranking and generation instructions.
+- [x] Build an authenticated admin settings panel with save, reset, validation, and access-denied states.
+- [x] Test role authorization, persistence, updated summary behavior, and responsive admin-panel layout.
+- [x] Diagnose and fix the post-login failure that prevents authenticated access to the AI rubric administration panel.
+- [ ] Complete a live administrator save/read and rubric-driven AI summary verification after the access repair.
+- [x] Remove reliance on failed browser-session handoff and improve the administrator route’s login-return guidance.
+- [ ] Verify administration authorization and persisted rubric behavior through server-side contracts without browser-session handoff.
+- [ ] Diagnose and fix the perpetual sign-in spinner affecting the administrator route.
+- [ ] Verify the repaired login callback creates a session and returns the administrator to the requested route.
+- [x] Define a rubric-sensitive cache key and retention policy for evidence-grounded AI summaries.
+- [x] Persist and reuse cached AI summaries so repeated filter views do not invoke the model unnecessarily.
+- [x] Add a one-click exportable feature-gap brief for the current filtered summary.
+- [x] Test cache reuse, cache invalidation after rubric updates, and brief-export content.

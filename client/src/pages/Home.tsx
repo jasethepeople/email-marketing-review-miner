@@ -16,10 +16,12 @@ import {
   MailWarning,
   Share2,
   ShieldCheck,
+  SlidersHorizontal,
   Sparkles,
   Workflow,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { buildFeatureGapBrief } from "@/lib/briefExport";
 import {
   Bar,
   BarChart,
@@ -232,6 +234,19 @@ export default function Home() {
     setNotice("Strategy thesis copied to clipboard.");
   };
 
+  const exportBrief = () => {
+    if (!aiSummary) return;
+    const brief = buildFeatureGapBrief({ filter: focus, sampleSize: selected?.sample ?? 38, summary: aiSummary });
+    const blob = new Blob([brief], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `signal-ledger-${focus.toLowerCase().replaceAll(" ", "-")}-feature-gap-brief.md`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setNotice("Current feature-gap brief downloaded.");
+  };
+
   return (
     <div className="ledger-app">
       <aside className="provenance-rail">
@@ -258,6 +273,7 @@ export default function Home() {
         <header className="topbar">
           <div className="topbar-kicker"><span className="live-dot" /> EXECUTIVE RESEARCH / EMAIL MARKETING</div>
           <div className="topbar-actions">
+            <a className="quiet-action" href="/admin"><SlidersHorizontal size={15} /> AI rubric</a>
             <button className="quiet-action" onClick={share}><Share2 size={15} /> Share</button>
             <a className="download-action" href={pdfUrl} target="_blank" rel="noreferrer"><ArrowDownToLine size={15} /> Download PDF</a>
           </div>
@@ -389,7 +405,7 @@ export default function Home() {
 
           {aiSummary && !isSummaryLoading && (
             <>
-              <p className="ai-perspective">{aiSummary.perspective}</p>
+              <div className="ai-perspective-row"><p className="ai-perspective">{aiSummary.perspective}</p><button className="ai-export" onClick={exportBrief}><ArrowDownToLine size={14} /> Export brief</button></div>
               <div className="ai-gap-grid">
                 {aiSummary.gaps.map((gap, index) => (
                   <article className="ai-gap-card" key={gap.theme}>
@@ -401,7 +417,7 @@ export default function Home() {
                   </article>
                 ))}
               </div>
-              <p className="ai-footnote">Model: {aiSummary.model}. This is a strategy aid, not a statistical ranking or an external market claim.</p>
+              <p className="ai-footnote">{aiSummary.cacheStatus === "cached" ? "Cached analysis reused; no additional model request." : "Fresh analysis generated from the active evidence."} Model: {aiSummary.model}. This is a strategy aid, not a statistical ranking or an external market claim.</p>
             </>
           )}
         </section>

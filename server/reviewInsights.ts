@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { invokeLLM, listLLMModels } from "./_core/llm";
+import { AiRubric, rankThemesForRubric, postureInstruction } from "./aiRubric";
 
 const themeSchema = z.object({
   label: z.string().min(1).max(48),
@@ -40,13 +41,15 @@ const concise = (value: string, limit: number) =>
   value.length <= limit ? value : `${value.slice(0, limit - 1).trimEnd()}…`;
 
 /** Generate only from supplied, current-filter evidence; no external market claims are allowed. */
-export async function generateFeatureGapSummary(input: ReviewInsightInput): Promise<FeatureGapSummary> {
+export async function generateFeatureGapSummary(input: ReviewInsightInput, rubric: AiRubric): Promise<FeatureGapSummary> {
   const evidenceByTheme = new Map(input.themes.map(theme => [theme.label, theme.count]));
-  const availableThemes = input.themes.filter(theme => theme.count > 0);
+  const availableThemes = rankThemesForRubric(input.themes, rubric);
 
   if (availableThemes.length < 3) {
-    throw new Error("At least three non-zero evidence themes are required for an AI top-three summary.");
+    throw new Error("The current rubric requires at least three eligible evidence themes for an AI top-three summary.");
   }
+
+  const selectedThemes = availableThemes.slice(0, 3);
 
   const models = await listLLMModels();
   const model = models.data.find(candidate => candidate.id === "gpt-5-mini")?.id
@@ -55,9 +58,8 @@ export async function generateFeatureGapSummary(input: ReviewInsightInput): Prom
 
   if (!model) throw new Error("No built-in model is available for the feature-gap summary.");
 
-  const evidence = availableThemes
-    .sort((a, b) => b.count - a.count)
-    .map(theme => `${theme.label}: ${theme.count} coded mentions`)
+  const evidence = selectedThemes
+    .map(theme => `${theme.label}: ${theme.count} coded mentions, weighted priority ${theme.priorityScore}`)
     .join("; ");
 
   const response = await invokeLLM({
@@ -65,11 +67,11 @@ export async function generateFeatureGapSummary(input: ReviewInsightInput): Prom
     messages: [
       {
         role: "system",
-        content: "You are a rigorous B2B product strategist. Use only the supplied coded review evidence. Do not invent customer facts, competitors, metrics, or market claims. Choose exactly three distinct themes from the supplied list. Translate each theme into a specific product feature gap, explain its current evidence in one concise sentence, and recommend a concrete build. Keep language decisive but calibrated.",
+        content: `You are a rigorous B2B product strategist. Use only the supplied coded review evidence. Do not invent customer facts, competitors, metrics, or market claims. Return exactly the three supplied themes, one per gap, in the supplied order. Translate each theme into a specific product feature gap, explain its current evidence in one concise sentence, and recommend a concrete build. ${postureInstruction(rubric.analysisPosture)} Keep the complete response under approximately ${rubric.maximumWords} words.`,
       },
       {
         role: "user",
-        content: `Selected filter: ${input.filter}. Sample size: ${input.sampleSize} public-review excerpts. Available coded themes: ${evidence}. Return a concise top-three feature-gap analysis grounded exclusively in these counts.`,
+        content: `Selected filter: ${input.filter}. Sample size: ${input.sampleSize} public-review excerpts. Rubric-ranked themes: ${evidence}. Return a concise top-three feature-gap analysis grounded exclusively in these counts.`,
       },
     ],
     response_format: {
@@ -113,10 +115,11 @@ export async function generateFeatureGapSummary(input: ReviewInsightInput): Prom
 
   const parsed = rawSummarySchema.parse(JSON.parse(content));
   const uniqueThemes = new Set(parsed.gaps.map(gap => gap.theme));
-  const unsupportedTheme = parsed.gaps.some(gap => !evidenceByTheme.has(gap.theme) || evidenceByTheme.get(gap.theme) === 0);
+  const selectedThemeNames = selectedThemes.map(theme => theme.label);
+  const unsupportedTheme = parsed.gaps.some(gap => !selectedThemeNames.includes(gap.theme) || evidenceByTheme.get(gap.theme) === 0);
 
-  if (uniqueThemes.size !== 3 || unsupportedTheme) {
-    throw new Error("The model selected duplicate or unsupported evidence themes. Please retry the analysis.");
+  if (uniqueThemes.size !== 3 || unsupportedTheme || parsed.gaps.some((gap, index) => gap.theme !== selectedThemeNames[index])) {
+    throw new Error("The model selected themes that do not match the configured rubric ranking. Please retry the analysis.");
   }
 
   return {

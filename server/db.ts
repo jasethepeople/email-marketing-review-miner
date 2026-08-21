@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { AiSummarySettings, InsertUser, aiSummaryCache, aiSummarySettings, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,65 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+export async function getAiSummarySettings(): Promise<AiSummarySettings | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(aiSummarySettings).where(eq(aiSummarySettings.id, 1)).limit(1);
+  return rows[0];
+}
+
+export async function saveAiSummarySettings(input: {
+  themeWeights: Record<string, number>;
+  minimumEvidenceCount: number;
+  maximumWords: number;
+  analysisPosture: string;
+  updatedBy: string;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("The rubric settings store is not available.");
+
+  await db.insert(aiSummarySettings).values({
+    id: 1,
+    themeWeights: input.themeWeights,
+    minimumEvidenceCount: input.minimumEvidenceCount,
+    maximumWords: input.maximumWords,
+    analysisPosture: input.analysisPosture,
+    updatedBy: input.updatedBy,
+  }).onDuplicateKeyUpdate({
+    set: {
+      themeWeights: input.themeWeights,
+      minimumEvidenceCount: input.minimumEvidenceCount,
+      maximumWords: input.maximumWords,
+      analysisPosture: input.analysisPosture,
+      updatedBy: input.updatedBy,
+      updatedAt: new Date(),
+    },
+  });
+}
+
+export async function getFreshAiSummaryCache(cacheKey: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(aiSummaryCache).where(and(
+    eq(aiSummaryCache.cacheKey, cacheKey),
+    gt(aiSummaryCache.expiresAt, new Date())
+  )).limit(1);
+  const cached = rows[0];
+  if (cached) await db.update(aiSummaryCache).set({ lastUsedAt: new Date() }).where(eq(aiSummaryCache.id, cached.id));
+  return cached;
+}
+
+export async function saveAiSummaryCache(cacheKey: string, summary: Record<string, unknown>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  await db.insert(aiSummaryCache).values({ cacheKey, summary, expiresAt, lastUsedAt: new Date() }).onDuplicateKeyUpdate({
+    set: { summary, expiresAt, lastUsedAt: new Date() },
+  });
+}
+
+export async function clearAiSummaryCache(): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(aiSummaryCache);
+}
