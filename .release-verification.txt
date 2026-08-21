@@ -1,0 +1,7 @@
+Release verification, 2026-08-21:
+- MySQL contains the persisted default AI rubric with all six weights, evidence threshold, word budget, and posture.
+- A live public tRPC summary request returned cacheStatus=cached and the matching unexpired cache row is stored in ai_summary_cache.
+- The rendered dossier shows the Export brief action beside the successful cached AI analysis.
+- Automated suite: 7 files / 12 tests passed, including OAuth callback return-to-admin, authorization, rubric weighting, cache reuse/invalidation, and brief content formatter contracts.
+- The only unavailable interactive check is external: the user-provided screenshot shows the Manus My Browser settings page itself spinning before any project request is made.
+- Real application-route verification: an administrator rubric update persisted Reliability at 3.0, regenerated the All-filter top three as Human escalation, Onboarding & usability, and Reliability, then returned a cached result on the identical second request. The original stored rubric was restored in the verification script's finally block.

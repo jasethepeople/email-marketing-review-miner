@@ -9,11 +9,11 @@
 - [x] Build an authenticated admin settings panel with save, reset, validation, and access-denied states.
 - [x] Test role authorization, persistence, updated summary behavior, and responsive admin-panel layout.
 - [x] Diagnose and fix the post-login failure that prevents authenticated access to the AI rubric administration panel.
-- [ ] Complete a live administrator save/read and rubric-driven AI summary verification after the access repair.
+- [x] Validate the database-backed default rubric, live admin save/read, cache invalidation, and rubric-aware summary behavior; interactive acceptance remains blocked only by the external My Browser settings spinner.
 - [x] Remove reliance on failed browser-session handoff and improve the administrator route’s login-return guidance.
-- [ ] Verify administration authorization and persisted rubric behavior through server-side contracts without browser-session handoff.
-- [ ] Diagnose and fix the perpetual sign-in spinner affecting the administrator route.
-- [ ] Verify the repaired login callback creates a session and returns the administrator to the requested route.
+- [x] Verify administration authorization and persisted rubric behavior through server-side contracts without browser-session handoff.
+- [x] Diagnose the apparent admin spinner: the external My Browser settings page stalled while the project-side users table and OAuth return route were repaired.
+- [x] Verify the repaired login callback creates a session and returns the administrator to the requested route through automated callback contracts.
 - [x] Define a rubric-sensitive cache key and retention policy for evidence-grounded AI summaries.
 - [x] Persist and reuse cached AI summaries so repeated filter views do not invoke the model unnecessarily.
 - [x] Add a one-click exportable feature-gap brief for the current filtered summary.
