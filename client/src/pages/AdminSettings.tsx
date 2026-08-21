@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, Loader2, RotateCcw, Settings2, ShieldAlert, SlidersHorizontal } from "lucide-react";
+import { CalendarClock, Check, History, Loader2, RefreshCw, RotateCcw, Settings2, ShieldAlert, SlidersHorizontal } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -31,7 +31,12 @@ function RubricPanel() {
   const utils = trpc.useUtils();
   const [form, setForm] = useState<RubricForm>(defaults);
   const settingsQuery = trpc.adminRubric.get.useQuery(undefined, { enabled: user?.role === "admin" });
-  const update = trpc.adminRubric.update.useMutation({ onSuccess: ({ rubric }) => { setForm(rubric); utils.adminRubric.get.invalidate(); utils.reviewInsights.featureGapSummary.invalidate(); } });
+  const historyQuery = trpc.adminRubric.history.useQuery(undefined, { enabled: user?.role === "admin" });
+  const sourceRefreshQuery = trpc.sourceRefresh.status.useQuery(undefined, { enabled: user?.role === "admin" });
+  const update = trpc.adminRubric.update.useMutation({ onSuccess: ({ rubric }) => { setForm(rubric); utils.adminRubric.get.invalidate(); utils.adminRubric.history.invalidate(); utils.reviewInsights.featureGapSummary.invalidate(); } });
+  const rollback = trpc.adminRubric.rollback.useMutation({ onSuccess: ({ rubric }) => { setForm(rubric); utils.adminRubric.get.invalidate(); utils.adminRubric.history.invalidate(); utils.reviewInsights.featureGapSummary.invalidate(); } });
+  const enableDaily = trpc.sourceRefresh.enableDaily.useMutation({ onSuccess: () => sourceRefreshQuery.refetch() });
+  const runNow = trpc.sourceRefresh.runNow.useMutation({ onSuccess: () => sourceRefreshQuery.refetch() });
 
   useEffect(() => { if (settingsQuery.data?.rubric) setForm(settingsQuery.data.rubric); }, [settingsQuery.data]);
 
@@ -54,6 +59,15 @@ function RubricPanel() {
         <label><Label htmlFor="maximumWords">Maximum summary words</Label><Input id="maximumWords" type="number" min="60" max="180" value={form.maximumWords} onChange={event => setForm(current => ({ ...current, maximumWords: Number(event.target.value) }))} /><small>60–180 words</small></label>
         <label><Label>Analysis posture</Label><Select value={form.analysisPosture} onValueChange={(value: RubricForm["analysisPosture"]) => setForm(current => ({ ...current, analysisPosture: value }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="balanced">Balanced & calibrated</SelectItem><SelectItem value="direct">Direct & decisive</SelectItem><SelectItem value="opportunity-led">Opportunity-led</SelectItem></SelectContent></Select><small>Changes instruction framing, not evidence.</small></label>
       </div></section>
+      <section className="admin-section"><div className="admin-section-title"><History size={18} /><div><h2>Version history</h2><p>Every save creates an immutable snapshot of the rubric it replaced. Restoring a snapshot also invalidates stale summary cache entries.</p></div></div>
+        {historyQuery.isLoading ? <div className="admin-inline-loading"><Loader2 size={15} className="spin" /> Loading saved versions…</div> : historyQuery.data?.versions.length ? <div className="history-list">{[...historyQuery.data.versions].reverse().map(version => <div className="history-row" key={version.id}><div><strong>Version {version.id}</strong><span>{new Date(version.createdAt).toLocaleString()} · {version.changeType}</span></div><p>{version.analysisPosture} · {version.minimumEvidenceCount} evidence minimum · {version.maximumWords} words</p><Button variant="outline" size="sm" onClick={() => rollback.mutate({ versionId: version.id })} disabled={rollback.isPending}>Restore</Button></div>)}</div> : <p className="admin-empty">No prior rubric version exists yet. The first save will create a reversible snapshot.</p>}
+        {rollback.error && <p className="save-error">The selected version could not be restored. Try again.</p>}
+      </section>
+      <section className="admin-section"><div className="admin-section-title"><CalendarClock size={18} /><div><h2>Daily source availability</h2><p>Checks whether the five cited public review pages are reachable at 09:00 UTC. This records only availability metadata; it does not ingest or alter review content.</p></div></div>
+        <div className="refresh-status"><div><span>STATUS</span><strong>{sourceRefreshQuery.data?.settings?.lastStatus ?? "Not yet checked"}</strong></div><div><span>LAST CHECK</span><strong>{sourceRefreshQuery.data?.settings?.lastRunAt ? new Date(sourceRefreshQuery.data.settings.lastRunAt).toLocaleString() : "—"}</strong></div><div><span>DAILY JOB</span><strong>{sourceRefreshQuery.data?.settings?.scheduleCronTaskUid ? "Active" : "Ready after publishing"}</strong></div></div>
+        <div className="refresh-actions"><Button variant="outline" onClick={() => runNow.mutate()} disabled={runNow.isPending}>{runNow.isPending ? <Loader2 size={15} className="spin" /> : <RefreshCw size={15} />} Run availability check</Button><Button onClick={() => enableDaily.mutate()} disabled={enableDaily.isPending || Boolean(sourceRefreshQuery.data?.settings?.scheduleCronTaskUid)}>{enableDaily.isPending ? <Loader2 size={15} className="spin" /> : <CalendarClock size={15} />} {sourceRefreshQuery.data?.settings?.scheduleCronTaskUid ? "Daily check enabled" : "Enable daily check"}</Button></div>
+        {enableDaily.error && <p className="save-error">Publish the site, then retry enabling the daily job from this panel.</p>}{runNow.error && <p className="save-error">The source check could not complete. No review data was changed.</p>}
+      </section>
       <footer className="admin-actions"><div>{update.isSuccess && <span className="save-success"><Check size={15} /> Rubric saved. New summaries will use these settings.</span>}{update.error && <span className="save-error">Could not save changes. Try again.</span>}</div><div><Button variant="outline" onClick={() => setForm(defaults)} disabled={update.isPending}><RotateCcw size={15} /> Reset defaults</Button><Button onClick={() => update.mutate(form)} disabled={!valid || update.isPending}>{update.isPending ? <Loader2 size={15} className="spin" /> : <Check size={15} />} Save rubric</Button></div></footer>
     </>}
   </div>;

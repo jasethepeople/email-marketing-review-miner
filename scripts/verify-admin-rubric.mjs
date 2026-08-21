@@ -53,3 +53,5 @@ try {
 } finally {
   await caller.adminRubric.update(original.rubric);
 }
+
+process.exit(0);

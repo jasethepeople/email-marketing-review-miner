@@ -1,4 +1,4 @@
-import { int, json, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, int, json, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -46,4 +46,28 @@ export const aiSummaryCache = mysqlTable("ai_summary_cache", {
   expiresAt: timestamp("expiresAt").notNull(),
   lastUsedAt: timestamp("lastUsedAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+/** Immutable snapshots make every administrator rubric change safely reversible. */
+export const aiRubricHistory = mysqlTable("ai_rubric_history", {
+  id: int("id").autoincrement().primaryKey(),
+  themeWeights: json("themeWeights").$type<Record<string, number>>().notNull(),
+  minimumEvidenceCount: int("minimumEvidenceCount").notNull(),
+  maximumWords: int("maximumWords").notNull(),
+  analysisPosture: varchar("analysisPosture", { length: 32 }).notNull(),
+  changedBy: varchar("changedBy", { length: 64 }).notNull(),
+  changeType: varchar("changeType", { length: 32 }).notNull(),
+  sourceVersionId: int("sourceVersionId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+/** Singleton configuration and latest result for the managed daily source-health refresh. */
+export const sourceRefreshSettings = mysqlTable("source_refresh_settings", {
+  id: int("id").primaryKey(),
+  enabled: boolean("enabled").default(true).notNull(),
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
+  lastRunAt: timestamp("lastRunAt"),
+  lastStatus: varchar("lastStatus", { length: 32 }),
+  lastResult: json("lastResult").$type<Record<string, unknown>>(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

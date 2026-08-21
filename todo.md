@@ -18,3 +18,9 @@
 - [x] Persist and reuse cached AI summaries so repeated filter views do not invoke the model unnecessarily.
 - [x] Add a one-click exportable feature-gap brief for the current filtered summary.
 - [x] Test cache reuse, cache invalidation after rubric updates, and brief-export content.
+- [x] Define persisted rubric-version history with safe administrator rollback behavior.
+- [x] Add an administrator history view and rollback action for prior rubric versions.
+- [x] Configure a managed scheduled refresh that records current public-review source availability without fabricating review data.
+- [ ] Create the user-approved daily source-availability job after the site is published (requires a live deployment URL).
+- [x] Add client-side PDF export for the current evidence-filtered feature-gap brief.
+- [x] Test rollback, scheduled refresh configuration, and exported PDF content.

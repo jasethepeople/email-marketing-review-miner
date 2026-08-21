@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TrpcContext } from "./_core/context";
 
-const { clearAiSummaryCache, getAiSummarySettings, saveAiSummarySettings } = vi.hoisted(() => ({
+const { clearAiSummaryCache, getAiSummarySettings, recordAiRubricHistory, saveAiSummarySettings } = vi.hoisted(() => ({
   clearAiSummaryCache: vi.fn(),
   getAiSummarySettings: vi.fn(),
+  recordAiRubricHistory: vi.fn(),
   saveAiSummarySettings: vi.fn(),
 }));
 
-vi.mock("./db", () => ({ clearAiSummaryCache, getAiSummarySettings, saveAiSummarySettings }));
+vi.mock("./db", () => ({ clearAiSummaryCache, getAiSummarySettings, recordAiRubricHistory, saveAiSummarySettings }));
 
 import { appRouter } from "./routers";
 
@@ -37,6 +38,7 @@ const rubric = {
 describe("admin rubric procedures", () => {
   beforeEach(() => {
     getAiSummarySettings.mockResolvedValue(undefined);
+    recordAiRubricHistory.mockResolvedValue(undefined);
     saveAiSummarySettings.mockResolvedValue(undefined);
     clearAiSummaryCache.mockResolvedValue(undefined);
   });
@@ -54,5 +56,6 @@ describe("admin rubric procedures", () => {
     expect(result.rubric).toEqual(rubric);
     expect(saveAiSummarySettings).toHaveBeenCalledWith({ ...rubric, updatedBy: "rubric-admin" });
     expect(clearAiSummaryCache).toHaveBeenCalledOnce();
+    expect(recordAiRubricHistory).toHaveBeenCalledOnce();
   });
 });

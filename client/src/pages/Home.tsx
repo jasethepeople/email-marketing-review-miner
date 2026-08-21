@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { buildFeatureGapBrief } from "@/lib/briefExport";
+import { buildFeatureGapPdf } from "@/lib/pdfBriefExport";
 import {
   Bar,
   BarChart,
@@ -247,6 +248,19 @@ export default function Home() {
     setNotice("Current feature-gap brief downloaded.");
   };
 
+  const exportPdfBrief = () => {
+    if (!aiSummary) return;
+    const pdf = buildFeatureGapPdf({ filter: focus, sampleSize: selected?.sample ?? 38, summary: aiSummary });
+    const pdfBuffer = new Uint8Array(pdf).buffer as ArrayBuffer;
+    const url = URL.createObjectURL(new Blob([pdfBuffer], { type: "application/pdf" }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `signal-ledger-${focus.toLowerCase().replaceAll(" ", "-")}-feature-gap-brief.pdf`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setNotice("Current feature-gap PDF downloaded.");
+  };
+
   return (
     <div className="ledger-app">
       <aside className="provenance-rail">
@@ -405,7 +419,7 @@ export default function Home() {
 
           {aiSummary && !isSummaryLoading && (
             <>
-              <div className="ai-perspective-row"><p className="ai-perspective">{aiSummary.perspective}</p><button className="ai-export" onClick={exportBrief}><ArrowDownToLine size={14} /> Export brief</button></div>
+              <div className="ai-perspective-row"><p className="ai-perspective">{aiSummary.perspective}</p><div className="ai-export-actions"><button className="ai-export" onClick={exportBrief}><ArrowDownToLine size={14} /> Markdown</button><button className="ai-export" onClick={exportPdfBrief}><ArrowDownToLine size={14} /> PDF brief</button></div></div>
               <div className="ai-gap-grid">
                 {aiSummary.gaps.map((gap, index) => (
                   <article className="ai-gap-card" key={gap.theme}>

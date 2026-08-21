@@ -1,6 +1,6 @@
 import { and, eq, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { AiSummarySettings, InsertUser, aiSummaryCache, aiSummarySettings, users } from "../drizzle/schema";
+import { AiSummarySettings, InsertUser, aiRubricHistory, aiSummaryCache, aiSummarySettings, sourceRefreshSettings, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -150,4 +150,55 @@ export async function clearAiSummaryCache(): Promise<void> {
   const db = await getDb();
   if (!db) return;
   await db.delete(aiSummaryCache);
+}
+
+export type RubricSnapshot = {
+  themeWeights: Record<string, number>;
+  minimumEvidenceCount: number;
+  maximumWords: number;
+  analysisPosture: string;
+};
+
+export async function recordAiRubricHistory(snapshot: RubricSnapshot & {
+  changedBy: string;
+  changeType: "update" | "rollback";
+  sourceVersionId?: number;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("The rubric history store is not available.");
+  await db.insert(aiRubricHistory).values(snapshot);
+}
+
+export async function listAiRubricHistory() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(aiRubricHistory).orderBy(aiRubricHistory.id).limit(50);
+}
+
+export async function getAiRubricHistoryVersion(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(aiRubricHistory).where(eq(aiRubricHistory.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function getSourceRefreshSettings() {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(sourceRefreshSettings).where(eq(sourceRefreshSettings.id, 1)).limit(1);
+  return rows[0];
+}
+
+export async function saveSourceRefreshSettings(input: {
+  enabled: boolean;
+  scheduleCronTaskUid?: string | null;
+  lastRunAt?: Date | null;
+  lastStatus?: string | null;
+  lastResult?: Record<string, unknown> | null;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("The source refresh settings store is not available.");
+  await db.insert(sourceRefreshSettings).values({ id: 1, ...input }).onDuplicateKeyUpdate({
+    set: { ...input, updatedAt: new Date() },
+  });
 }

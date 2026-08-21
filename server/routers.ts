@@ -1,10 +1,14 @@
 import { COOKIE_NAME } from "@shared/const";
+import { parse as parseCookie } from "cookie";
+import { z } from "zod";
 import { DEFAULT_AI_RUBRIC, aiRubricSchema } from "./aiRubric";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { createHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
-import { clearAiSummaryCache, getAiSummarySettings, saveAiSummarySettings } from "./db";
+import { clearAiSummaryCache, getAiRubricHistoryVersion, getAiSummarySettings, getSourceRefreshSettings, listAiRubricHistory, recordAiRubricHistory, saveAiSummarySettings, saveSourceRefreshSettings } from "./db";
 import { reviewInsightInputSchema } from "./reviewInsights";
+import { runSourceAvailabilityRefresh } from "./sourceRefresh";
 import { getOrCreateFeatureGapSummary } from "./summaryCache";
 
 async function currentRubric() {
@@ -41,11 +45,50 @@ export const appRouter = router({
 
   adminRubric: router({
     get: adminProcedure.query(async () => ({ rubric: await currentRubric() })),
+    history: adminProcedure.query(async () => ({ versions: await listAiRubricHistory() })),
     update: adminProcedure.input(aiRubricSchema).mutation(async ({ ctx, input }) => {
+      const prior = await currentRubric();
+      await recordAiRubricHistory({ ...prior, changedBy: ctx.user.openId, changeType: "update" });
       await saveAiSummarySettings({ ...input, updatedBy: ctx.user.openId });
       await clearAiSummaryCache();
       return { rubric: input };
     }),
+    rollback: adminProcedure.input(z.object({ versionId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      const version = await getAiRubricHistoryVersion(input.versionId);
+      if (!version) throw new Error("The requested rubric version no longer exists.");
+      const prior = await currentRubric();
+      await recordAiRubricHistory({ ...prior, changedBy: ctx.user.openId, changeType: "rollback", sourceVersionId: version.id });
+      const rubric = aiRubricSchema.parse({
+        themeWeights: version.themeWeights,
+        minimumEvidenceCount: version.minimumEvidenceCount,
+        maximumWords: version.maximumWords,
+        analysisPosture: version.analysisPosture,
+      });
+      await saveAiSummarySettings({ ...rubric, updatedBy: ctx.user.openId });
+      await clearAiSummaryCache();
+      return { rubric };
+    }),
+  }),
+
+  sourceRefresh: router({
+    status: adminProcedure.query(async () => ({ settings: await getSourceRefreshSettings() })),
+    enableDaily: adminProcedure.mutation(async ({ ctx }) => {
+      const sessionToken = parseCookie(ctx.req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
+      if (!sessionToken) throw new Error("A valid session is required to enable the daily refresh.");
+      const existing = await getSourceRefreshSettings();
+      const job = {
+        name: "daily-review-source-availability",
+        cron: "0 0 9 * * *",
+        path: "/api/scheduled/source-availability",
+        description: "Daily public review-source availability check for Signal Ledger.",
+      };
+      const task = existing?.scheduleCronTaskUid
+        ? await updateHeartbeatJob(existing.scheduleCronTaskUid, { cron: job.cron, path: job.path, description: job.description, enable: true }, sessionToken).then(() => ({ taskUid: existing.scheduleCronTaskUid }))
+        : await createHeartbeatJob(job, sessionToken);
+      await saveSourceRefreshSettings({ enabled: true, scheduleCronTaskUid: task.taskUid });
+      return { taskUid: task.taskUid, nextExecutionAt: "nextExecutionAt" in task ? task.nextExecutionAt : null };
+    }),
+    runNow: adminProcedure.mutation(async () => runSourceAvailabilityRefresh()),
   }),
 
   // TODO: add feature routers here, e.g.
